@@ -1,0 +1,91 @@
+import cv2
+import os
+import csv
+# Папка з відео
+video_folder = r"C:\Users\User\Documents\Test fourth law"
+# Характеристики відео
+video_info = {
+    "8968356": ["Train A", "Static", "Near top-down", "Average"],
+    "5382494": ["Train B", "Forward", "Near-horizontal", "Low"],
+    "8457857": ["Train C", "Tilt Up (stationary)", "Near-nadir to horizontal", "High"],
+    "3405804": ["Train D", "Backward", "Top-down", "Average"],
+    "13722965": ["Evaluation", "Unknown", "Unknown", "Unknown"]
+}
+# Список для збереження метаданих
+video_data = []
+# Перебираємо всі файли
+for filename in os.listdir(video_folder):
+
+    if filename.endswith(".mp4"):
+
+        video_path = os.path.join(video_folder, filename)
+
+        video = cv2.VideoCapture(video_path)
+
+        if not video.isOpened():
+            print(f"Cannot open: {filename}")
+            continue
+
+        fps = video.get(cv2.CAP_PROP_FPS)
+        total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
+
+        width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+        height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+ # Отримуємо ID відео з назви файлу
+        video_id = filename.split("_")[0].split("-")[0]
+
+        # Знаходимо характеристики відео
+        role, motion, angle, density = video_info.get(
+            video_id,
+            ["Unknown", "Unknown", "Unknown", "Unknown"]
+        )
+        duration = total_frames / fps if fps > 0 else 0
+
+        print("DEBUG: duration =", duration)
+        
+        # Зберігаємо інформацію
+        video_data.append({
+            "Video": filename,
+            "Role": role,
+            "FPS": round(fps, 2),
+            "Resolution": f"{int(width)}x{int(height)}",
+            "Duration_sec": round(duration, 2),
+            "Total_Frames": int(total_frames),
+            "Camera_Motion": motion,
+            "Camera_Angle": angle,
+            "Object_Density": density
+        })
+
+        
+
+        print(f"\nVideo: {filename}")
+        print(f"Resolution: {int(width)}x{int(height)}")
+        print(f"FPS: {fps}")
+        print(f"Total Frames: {int(total_frames)}")
+        print(f"Duration: {duration:.2f} seconds")
+
+        video.release()
+        # Шлях до CSV
+csv_path = os.path.join(video_folder, "video_metadata.csv")
+
+# Створюємо CSV
+with open(csv_path, "w", newline="", encoding="utf-8-sig") as file:
+
+    fieldnames = [
+        "Video",
+        "Role",
+        "FPS",
+        "Resolution",
+        "Duration_sec",
+        "Total_Frames",
+        "Camera_Motion",
+        "Camera_Angle",
+        "Object_Density"
+    ]
+
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+    writer.writeheader()
+    writer.writerows(video_data)
+
+print(f"\nCSV created successfully: {csv_path}")
